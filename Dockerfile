@@ -24,6 +24,14 @@ RUN mkdir gogo && cd gogo && git clone https://github.com/gogo/protobuf.git && \
     go install github.com/gogo/protobuf/protoc-gen-gogoslick && \
     cd ../../ && rm -rf gogo
 
+# Install the latest version of the protoc-gen-govalidator plugin
+RUN go get github.com/mwitkow/go-proto-validators/protoc-gen-govalidators && \
+    rm -rf mwitkow
+
+# Install the latest version of the protoc-gen-uwpartner plugin
+RUN go get github.com/utilitywarehouse/protoc-gen-uwpartner && \
+    rm -rf utilitywarehouse
+
 # Clone golangci repo reset to the latest tag and install
 RUN mkdir golangci && cd golangci && git clone https://github.com/golangci/golangci-lint.git && \
     cd golangci-lint && git reset --hard $(git rev-list --tags --max-count=1) && \
