@@ -4,7 +4,7 @@ $(error project directory doesn't exist)
 endif
 
 ifneq ("$(wildcard project/app.mk)","")
-	include project/app.mk
+include project/app.mk
 endif
 
 # --------------------------------------------------------------------------------------------------
@@ -18,7 +18,6 @@ endif
 ifndef APP_DESCRIPTION
 $(error APP_DESCRIPTION is not set in the app.mk file)
 endif
-
 
 GIT_SUMMARY := $(shell cd project && git describe --tags --dirty --always)
 GIT_BRANCH := $(shell cd project && git rev-parse --abbrev-ref HEAD)
@@ -46,20 +45,20 @@ LDFLAGS := -ldflags '-s \
 # Setup Tasks
 # --------------------------------------------------------------------------------------------------
 
-install-ci: ## install dependencies and redact github token
+install: ## install dependencies and redact github token
 	cd project && go get -d -v ./... 2>&1 | sed -e "s/[[:alnum:]]*:x-oauth-basic/redacted/"
 
-test-ci: ## run tests on package and all subpackages
+test: ## run tests on package and all subpackages
 	cd project && go test $(LDFLAGS) -v -race -tags integration ./...
 
-lint-ci: ## run the linter
+lint: ## run the linter
 	cd project && golangci-lint run --deadline=2m
 
 # --------------------------------------------------------------------------------------------------
 # Build Tasks
 # --------------------------------------------------------------------------------------------------
 
-build-app-ci:
+build-app:
 ifneq ("$(wildcard project/main.go)","")
 	cd project && CGO_ENABLED=0 go build $(LDFLAGS) -o ../bin/$(MAIN_IMAGE_NAME) -a .
 endif
@@ -74,12 +73,12 @@ endef
 ./bin/%: ./project/cmd/% ## build individual command
 	$(go-build)
 
-build-commands-ci: $(cmds) ## build all commands
+build-commands: $(cmds) ## build all commands
 
-build-all: build-app-ci build-commands-ci
+build-all: build-app build-commands
 
 # --------------------------------------------------------------------------------------------------
-# Docker Tasks
+# Docker Build Tasks
 # --------------------------------------------------------------------------------------------------
 
 docker_commands = $(foreach source,$(cmd_sources),$(subst /,,$(subst ./project/cmd/,docker-build-cmd-,$(source))))
@@ -90,11 +89,13 @@ define docker-build
 endef
 
 docker-build-app: ## build docker image for main app
+ifneq ("$(wildcard project/main.go)","")
 	docker build -f Dockerfile.project -t $(DOCKER_BASE_NAME)/$(MAIN_IMAGE_NAME):$(CIRCLE_SHA1) . --build-arg EXECUTABLE=$(MAIN_IMAGE_NAME)
 	docker save --output ./images/$(MAIN_IMAGE_NAME).tar $(DOCKER_BASE_NAME)/$(MAIN_IMAGE_NAME):$(CIRCLE_SHA1)
+endif
 
 docker-build-cmd-%: image_name = $(MAIN_IMAGE_NAME)-$(subst docker-build-cmd-,,$@)
-docker-build-cmd-%: ## build docker image for one command
+docker-build-cmd-%: ./bin/% ## build docker image for one command
 	$(docker-build)
 
 docker-build-commands: $(docker_commands)
@@ -103,6 +104,10 @@ ensure-static: ## ensures that a static folder exists in the project
 	mkdir -p project/static
 
 docker-build-all: ensure-static build-all docker-build-app docker-build-commands
+
+# --------------------------------------------------------------------------------------------------
+# Docker Push Tasks
+# --------------------------------------------------------------------------------------------------
 
 image_sources = $(sort $(shell find ./images -mindepth 1 -maxdepth 1 -exec basename {} \;))
 images = $(foreach image,$(image_sources),docker-push-image-$(subst .tar,,$(image)))
