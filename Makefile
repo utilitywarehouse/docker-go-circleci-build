@@ -64,13 +64,13 @@ ifneq ("$(wildcard project/main.go)","")
 endif
 
 cmd_sources = $(dir $(wildcard ./project/cmd/*/main.go))
-cmds = $(foreach source,$(cmd_sources),$(patsubst %/,%,$(subst ./project/cmd,./bin,$(source))))
+cmds = $(foreach source,$(cmd_sources),$(patsubst %/,%,$(subst ./project/cmd/,./bin/$(MAIN_IMAGE_NAME)-,$(source))))
 
 define go-build
 	cd ./$< && CGO_ENABLED=0 go build $(LDFLAGS) -o ./../../../$@ -a .
 endef
 
-./bin/%: ./project/cmd/% ## build individual command
+./bin/$(MAIN_IMAGE_NAME)-%: ./project/cmd/% ## build individual command
 	$(go-build)
 
 build-commands: $(cmds) ## build all commands
@@ -81,20 +81,18 @@ build-all: build-app build-commands
 # Docker Build Tasks
 # --------------------------------------------------------------------------------------------------
 
-docker_commands = $(foreach source,$(cmd_sources),$(subst /,,$(subst ./project/cmd/,docker-build-cmd-,$(source))))
+docker_commands = $(foreach source,$(cmd_sources),$(subst /,,$(subst ./project/cmd/,docker-build-cmd-$(MAIN_IMAGE_NAME)-,$(source))))
 
 define docker-build
-	docker build -f Dockerfile.project -t $(DOCKER_BASE_NAME)/$(image_name):$(CIRCLE_SHA1) . --build-arg EXECUTABLE=$(<F)
-	docker save --output ./images/$(image_name).tar $(DOCKER_BASE_NAME)/$(image_name):$(CIRCLE_SHA1)
+	docker build -f Dockerfile.project -t $(DOCKER_BASE_NAME)/$(image_name):$(CIRCLE_SHA1) . --build-arg EXECUTABLE=$(image_name)
 endef
 
 docker-build-app: ## build docker image for main app
 ifneq ("$(wildcard project/main.go)","")
 	docker build -f Dockerfile.project -t $(DOCKER_BASE_NAME)/$(MAIN_IMAGE_NAME):$(CIRCLE_SHA1) . --build-arg EXECUTABLE=$(MAIN_IMAGE_NAME)
-	docker save --output ./images/$(MAIN_IMAGE_NAME).tar $(DOCKER_BASE_NAME)/$(MAIN_IMAGE_NAME):$(CIRCLE_SHA1)
 endif
 
-docker-build-cmd-%: image_name = $(MAIN_IMAGE_NAME)-$(subst docker-build-cmd-,,$@)
+docker-build-cmd-%: image_name = $(subst docker-build-cmd-,,$@)
 docker-build-cmd-%: ./bin/% ## build docker image for one command
 	$(docker-build)
 
@@ -109,11 +107,10 @@ docker-build-all: ensure-static build-all docker-build-app docker-build-commands
 # Docker Push Tasks
 # --------------------------------------------------------------------------------------------------
 
-image_sources = $(sort $(shell find ./images -mindepth 1 -maxdepth 1 -exec basename {} \;))
-images = $(foreach image,$(image_sources),docker-push-image-$(subst .tar,,$(image)))
+image_sources = $(sort $(shell find ./bin -mindepth 1 -maxdepth 1 -exec basename {} \;))
+images = $(foreach image,$(image_sources),docker-push-image-$(image))
 
 define docker-push-image
-	docker load --input ./images/$(image_name).tar
 	docker tag $(DOCKER_BASE_NAME)/$(image_name):$(CIRCLE_SHA1) $(DOCKER_BASE_NAME)/$(image_name):$(DOCKER_TAG)
 	docker push $(DOCKER_BASE_NAME)/$(image_name)
 endef
