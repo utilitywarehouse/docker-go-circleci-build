@@ -42,4 +42,4 @@ RUN mkdir golangci && cd golangci && git clone https://github.com/golangci/golan
 WORKDIR /build
 ADD ./Makefile .
 ADD ./Dockerfile.project .
-RUN mkdir project images
+RUN mkdir project
