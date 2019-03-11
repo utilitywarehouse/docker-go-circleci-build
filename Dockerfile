@@ -1,9 +1,9 @@
-FROM circleci/golang:1.11
+FROM circleci/golang:1.12
 
 USER root
 WORKDIR /go/src/github.com/
 
-ENV PROTOBUF_VERSION="3.6.1"
+ENV PROTOBUF_VERSION="3.7.0"
 
 # Dowload given version of the protobuf binary
 RUN wget https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip && \
@@ -42,4 +42,4 @@ RUN mkdir golangci && cd golangci && git clone https://github.com/golangci/golan
 WORKDIR /build
 ADD ./Makefile .
 ADD ./Dockerfile.project .
-RUN mkdir project
+RUN mkdir project && mkdir bin
