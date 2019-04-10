@@ -46,7 +46,7 @@ LDFLAGS := -ldflags '-s \
 # --------------------------------------------------------------------------------------------------
 
 install: ## install dependencies and redact github token
-	cd project && go get -d -v ./... 2>&1 | sed -e "s/[[:alnum:]]*:x-oauth-basic/redacted/"
+	cd project && go mod download 2>&1 | sed -e "s/[[:alnum:]]*:x-oauth-basic/redacted/"
 
 test: ## run tests on package and all subpackages
 	cd project && go test $(LDFLAGS) -v -race -tags integration ./...
