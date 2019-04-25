@@ -52,7 +52,7 @@ test: ## run tests on package and all subpackages
 	cd project && go test $(LDFLAGS) -v -race -tags integration ./...
 
 lint: ## run the linter
-	cd project && golangci-lint run --deadline=2m
+	cd project && golangci-lint run --deadline=2m --config=/build/.golangci.yml
 
 # --------------------------------------------------------------------------------------------------
 # Build Tasks
