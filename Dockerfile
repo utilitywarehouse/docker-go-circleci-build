@@ -15,7 +15,7 @@ RUN apt-get update \
 
 ## `protoc` binary
 RUN mkdir -p /tmp/protoc && cd /tmp/protoc \
-    && curl -sSL https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -o protoc.zip \
+    && curl -sSL --retry 3 https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -o protoc.zip \
     && unzip protoc.zip \
     && mv /tmp/protoc/bin/protoc* /usr/local/bin \
     && mv /tmp/protoc/include/* /usr/local/include \
@@ -43,16 +43,15 @@ RUN GO111MODULE=on go get \
 ## `golangci-lint` binary
 # Golangci Lint
 RUN mkdir -p /tmp/golangci-lint && cd /tmp/golangci-lint \
-    && curl -sSL https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz -o golangci-lint.tar.gz \
+    && curl -sSL --retry 3 https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz -o golangci-lint.tar.gz \
     && tar -xvf golangci-lint.tar.gz \
     && mv /tmp/golangci-lint/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint /usr/local/bin \
     && rm -rf /tmp/golangci-lint
 ADD ./.golangci.yml /
 
 ## `docker` binary
-## installs the latest version
 RUN set -ex \
-    && curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
+    && curl  -sSL --retry 3 https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz -o /tmp/docker.tgz \
     && ls -lha /tmp/docker.tgz \
     && tar -xz -C /tmp -f /tmp/docker.tgz \
     && mv /tmp/docker/* /usr/local/bin \
