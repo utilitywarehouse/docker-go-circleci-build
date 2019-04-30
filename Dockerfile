@@ -7,7 +7,8 @@ ENV PROTOBUF_VERSION="3.7.0" \
     VALIDATORS_PROTOBUF_VERSION="1f388280e944c97cc59c75d8c84a704097d1f1d6" \
     UWPARTNER_PROTOBUF_VERSION="de4552500027969912fd801dcc5269a153b3fffe" \
     GOLANGCI_LINT_VERSION="1.16.0" \
-    GOTESTSUM_VERSION="0.3.4"
+    GOTESTSUM_VERSION="0.3.4" \
+    DOCKER_VERSION="18.09.5"
 
 ## Dependencies
 RUN apt-get update && \
@@ -56,16 +57,11 @@ RUN curl -sSL https://github.com/gotestyourself/gotestsum/releases/download/v${G
 ## `docker` binary
 ## installs the latest version
 RUN set -ex \
-    && export DOCKER_VERSION=$(curl --silent --fail --retry 3 https://download.docker.com/linux/static/stable/x86_64/ | grep -o -e 'docker-[.0-9]*\.tgz' | sort -r | head -n 1) \
-    && DOCKER_URL="https://download.docker.com/linux/static/stable/x86_64/${DOCKER_VERSION}" \
-    && echo Docker URL: $DOCKER_URL \
-    && curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz "${DOCKER_URL}" \
+    && curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
     && ls -lha /tmp/docker.tgz \
     && tar -xz -C /tmp -f /tmp/docker.tgz \
-    && mv /tmp/docker/* /usr/bin \
-    && rm -rf /tmp/docker /tmp/docker.tgz \
-    && which docker \
-    && (docker version || true)
+    && mv /tmp/docker/* /usr/local/bin \
+    && rm -rf /tmp/docker /tmp/docker.tgz
 
 # Copy in makefile and project docker image
 WORKDIR /build
