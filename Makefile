@@ -49,7 +49,7 @@ install: ## install dependencies and redact github token
 	cd project && go mod download 2>&1 | sed -e "s/[[:alnum:]]*:x-oauth-basic/redacted/"
 
 test: ## run tests on package and all subpackages
-	cd project && go test $(LDFLAGS) -v -race -tags integration ./...
+	cd project && gotestsum -- $(LDFLAGS) -race -tags integration ./...
 
 lint: ## run the linter
 	cd project && golangci-lint run --deadline=2m --config=/build/.golangci.yml
